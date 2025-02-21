@@ -1,3 +1,4 @@
+from kfp.dsl import pipeline, If as dsl_if
 from kfp import compiler
 from google.cloud import aiplatform
 from components import *
@@ -24,6 +25,16 @@ def train_pipeline():
         gcs_data_folder=GCS_DATA_FOLDER,
         saved_models_gcs_folder=load_and_train_wrapper_task.outputs["saved_folder"],
     )
+
+    with dsl_if(
+        eval_task.outputs["deploy"] == "true",
+        # and (train_dummy_task.outputs["dummy_msg"] == "hello"),
+        name="mAP>85% & mAP50-95>50%",
+    ):
+        deploy_task = deploy(
+            image_path=PREDICTION_IMAGE,
+            saved_folder=load_and_train_wrapper_task.outputs["saved_folder"],
+        )
 
 
 if __name__ == "__main__":
